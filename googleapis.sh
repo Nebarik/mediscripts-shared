@@ -5,18 +5,35 @@
 # Read me #
 #---------#
 
-# This script will check the download speed from the different Google endpoints and then set your Hosts file with it.
+# This script will check the download speed from the different Google endpoints by downloading a test file. And then it will set your Hosts file with it.
+# Any speed measured in KiB/s it will blacklist so it doesnt check again next time, improving script speed. Might be worth clearing out the .blacklist-apis file every now and then in case one of those IPs gets fixed.
+# If you have any servers you prefer, particularly from a foreign country that the dig may not find. Add them to a file in this folder, one line each. Default filename is .whitelist-apis
+# Example .whitelist-apis file contents
+# 123.456.789
+# 222.333.444
+# The blacklisting will overwrite and take priority over any whitelisted IPs
+
 # For the testfile, if it's too small it will download too quickly for the rclone.log to get a good read on it.
 # Bigger the better as Google Drive ramps up speed as it goes, however slow endpoints will take forever. I recommend roughly 50MB.
-# Create a file with this command: "fallocate -l 50M dummythicc"
-# If you get the error "tmpapi/speedresults is a directory", this means the didn't find a speed measured in MiB/s, generally safe to ignore unless you are expecting GiB/s.
+# Create a file with this command: "fallocate -l 50M dummythicc" and then copy it to your Gdrive somewhere rclone can get at it.
 
-#-----------------#
-# Edit these bits #
-#-----------------#
+# Troubleshooting:
+# If you are not getting any speed results. This script is looking for MiB/s in the rclone log. You may be running a older or different rclone version that outputted logs in MBs.
+# Update rclone or edit the script below. 
+# If you get the error "tmpapi/speedresults is a directory", this means the script didn't find a speed measured in MiB/s, generally safe to ignore unless you are expecting GiB/s.
+# Any other weird problems, recommend commented out the cleanup section at the very end. That rm command deletes all the tmp files, but you may want to have a look at what it's doing.
 
+#-----------#
+# Variables #
+#-----------#
+
+# Edit test file location
 testfile='gcrypt2:/temp/dummythicc'
+
+# Defaults
 api=www.googleapis.com
+whitelist=.whitelist-apis
+blacklist=.blacklist-apis
 
 #-------------------#
 # Hosts file backup #
@@ -43,14 +60,23 @@ mkdir tmpapi/speedresults/
 mkdir tmpapi/testfile/
 dig +answer $api +short > tmpapi/api-ips-fresh
 
+#--------------------------#
+# Whitelist Known Good IPs #
+#--------------------------#
+
+mv tmpapi/api-ips-fresh tmpapi/api-ips-progress
+touch $whitelist
+while IFS= read -r wip; do
+	echo "$wip" >> tmpapi/api-ips-progress
+done < "$whitelist"
+mv tmpapi/api-ips-progress tmpapi/api-ips-plus-white
 
 #------------------------#
 # Backlist Known Bad IPs #
 #------------------------#
 
-mv tmpapi/api-ips-fresh tmpapi/api-ips-progress
-touch .blacklist-apis
-blacklist=.blacklist-apis
+mv tmpapi/api-ips-plus-white tmpapi/api-ips-progress
+touch $blacklist
 while IFS= read -r bip; do
         grep -v "$bip" tmpapi/api-ips-progress > tmpapi/api-ips
         mv tmpapi/api-ips tmpapi/api-ips-progress
@@ -67,7 +93,7 @@ GRN='\033[0;32m'
 NC='\033[0m'
 
 #------------------#
-# Checking each ip #
+# Checking each IP #
 #------------------#
 
 input=tmpapi/api-ips

@@ -13,10 +13,9 @@ documentaryfilms="/media/gcrypt2/Documentary-Films/"
 nonfiction="/media/gcrypt2/Non-Fiction-Shows/"
 standupspecials="/media/gcrypt2/Standup-Specials/"
 comedianshows="/media/gcrypt2/Comedian-Shows/"
-tvshows="/media/gcrypt2/TV Shows/"
+tvshows="/media/gcrypt2/TV-Shows/"
 skip1="temp"
 skip2="Emby-backups"
-
 
 # Colours!
 
@@ -47,46 +46,68 @@ for d in ...
       elif [[ "${foldernames}" == "${skip2}" ]]
       then
       printf "${RED}[Skipping]:${NC} ${foldernames}\n"
+# Empty check
+      elif
+      number=$(find "$recycling/${foldernames}" -type f | wc -l)
+      [ "$number" == "0" ]; then
+      printf "${RED}[Empty]:${NC} ${foldernames}\n"
+      elif
+      rnumber=$(rclone ls gcrypt2:/temp/"${foldernames}" | wc -l)
+      [ "$rnumber" == "0" ]; then
+      printf "${RED}[Empty Remote]:${NC} ${foldernames}\n"
 # Standard
       elif [ -d "${movies}${foldernames}" ]
       then
-      printf "${GRN}[Moving to Movies]:${NC} ${foldernames}\n"
+      printf "${GRN}[Moving to Movies]:${NC} ${foldernames} | $number files\n"
       rclone move gcrypt2:/temp/"${foldernames}" gcrypt2:/Movies/"${foldernames}"
+      echo "${foldernames}" >> ~/tempsync.log 
       elif [ -d "${tvshows}${foldernames}" ]
       then
-      printf "${GRN}[Moving to TV Shows]:${NC} ${foldernames}\n"
-      rclone move gcrypt2:/temp/"${foldernames}" gcrypt:/TV\ Shows/"${foldernames}"
+      printf "${GRN}[Moving to TV Shows]:${NC} ${foldernames} | $number files\n"
+      rclone move gcrypt2:/temp/"${foldernames}" gcrypt2:/TV-Shows/"${foldernames}"
+      echo "${foldernames}" >> ~/tempsync.log
 # Anime
       elif [ -d "${animemovies}${foldernames}" ]
       then
-      printf "${ORN}[Moving to Anime-Movies]:${NC} ${foldernames}\n"
+      printf "${ORN}[Moving to Anime-Movies]:${NC} ${foldernames} | $number files\n"
       rclone move gcrypt2:/temp/"${foldernames}" gcrypt2:/Anime-Movies/"${foldernames}"
+      echo "${foldernames}" >> ~/tempsync.log
       elif [ -d "${anime}${foldernames}" ]
       then
-      printf "${ORN}[Moving to Anime]:${NC} ${foldernames}\n"
+      printf "${ORN}[Moving to Anime]:${NC} ${foldernames} | $number files\n"
       rclone move gcrypt2:/temp/"${foldernames}" gcrypt2:/Anime/"${foldernames}"
+      echo "${foldernames}" >> ~/tempsync.log
 # Docus
       elif [ -d "${documentaryfilms}${foldernames}" ]
       then
-      printf "${PLP}[Moving to Documentary-Films]:${NC} ${foldernames}\n"
+      printf "${PLP}[Moving to Documentary-Films]:${NC} ${foldernames} | $number files\n"
       rclone move gcrypt2:/temp/"${foldernames}" gcrypt2:/Documentary-Films/"${foldernames}"
+      echo "${foldernames}" >> ~/tempsync.log
       elif [ -d "${nonfiction}${foldernames}" ]
       then
-      printf "${PLP}[Moving to Non-Fiction Shows]:${NC} ${foldernames}\n"
+      printf "${PLP}[Moving to Non-Fiction Shows]:${NC} ${foldernames} | $number files\n"
       rclone move gcrypt2:/temp/"${foldernames}" gcrypt2:/Non-Fiction-Shows/"${foldernames}"
+      echo "${foldernames}" >> ~/tempsync.log
 # Comedy
       elif [ -d "${standupspecials}${foldernames}" ]
       then
-      printf "${CYN}[Moving to Standup-Specials]:${NC} ${foldernames}\n"
+      printf "${CYN}[Moving to Standup-Specials]:${NC} ${foldernames} | $number files\n"
       rclone move gcrypt2:/temp/"${foldernames}" gcrypt2:/Standup-Specials/"${foldernames}"
+      echo "${foldernames}" >> ~/tempsync.log
       elif [ -d "${comedianshows}${foldernames}" ]
       then
-      printf "${CYN}[Moving to Comedian-Shows]:${NC} ${foldernames}\n"
+      printf "${CYN}[Moving to Comedian-Shows]:${NC} ${foldernames} | $number files\n"
       rclone move gcrypt2:/temp/"${foldernames}" gcrypt2:/Comedian-Shows/"${foldernames}"
+      echo "${foldernames}" >> ~/tempsync.log
 # Unknown ignore
       else
       printf "${RED}[Not Found]:${NC} ${foldernames}\n"
       fi
   done
 done
+echo "--------"
+echo "Summary of folders moved:"
+echo "--------"
+cat ~/tempsync.log
+rm ~/tempsync.log
 exit
